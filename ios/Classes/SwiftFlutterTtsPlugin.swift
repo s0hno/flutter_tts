@@ -19,7 +19,7 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
   var autoStopSharedSession: Bool = true
   var speakResult: FlutterResult? = nil
   var synthResult: FlutterResult? = nil
-    
+  var stopResult: FlutterResult? = nil
 
   var channel = FlutterMethodChannel()
   lazy var audioSession = AVAudioSession.sharedInstance()
@@ -86,8 +86,7 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
       self.setPitch(pitch: Float(pitch), result: result)
       break
     case "stop":
-      self.stop()
-      result(1)
+      self.stop(result: result)
       break
     case "getLanguages":
       self.getLanguages(result: result)
@@ -234,7 +233,7 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
   }
 
   private func pause(result: FlutterResult) {
-      if (self.synthesizer.pauseSpeaking(at: AVSpeechBoundary.word)) {
+      if (self.synthesizer.pauseSpeaking(at: .immediate)) {
         result(1)
       } else {
         result(0)
@@ -304,8 +303,13 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
     }
   }
 
-  private func stop() {
-    self.synthesizer.stopSpeaking(at: AVSpeechBoundary.immediate)
+  private func stop(result: @escaping FlutterResult) {
+    let isSuccess = self.synthesizer.stopSpeaking(at: .immediate)
+    if isSuccess {
+      self.stopResult = result
+    } else {
+      result(0)
+    }
   }
 
   private func getLanguages(result: FlutterResult) {
@@ -388,6 +392,13 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
         print(error)
       }
     }
+
+    if let stopResult = self.stopResult {
+      stopResult(1)
+      self.stopResult = nil
+      return
+    }
+
     if self.awaitSpeakCompletion && self.speakResult != nil {
         self.speakResult!(1)
         self.speakResult = nil

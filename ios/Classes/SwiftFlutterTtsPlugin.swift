@@ -137,7 +137,7 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
   }
 
   private func speak(text: String, result: @escaping FlutterResult) {
-    if (self.synthesizer.isPaused) {
+    if (self.synthesizer.isPaused && self.synthesizer.isSpeaking) {
       if (self.synthesizer.continueSpeaking()) {
         if self.awaitSpeakCompletion {
           self.speakResult = result

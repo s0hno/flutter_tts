@@ -8,6 +8,7 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
   final var iosAudioModeKey = "iosAudioModeKey"
 
   let synthesizer = AVSpeechSynthesizer()
+  let waitPlayer: AVAudioPlayer
   var language: String = AVSpeechSynthesisVoice.currentLanguageCode()
   var rate: Float = AVSpeechUtteranceDefaultSpeechRate
   var languages = Set<String>()
@@ -24,6 +25,10 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
   var channel = FlutterMethodChannel()
   lazy var audioSession = AVAudioSession.sharedInstance()
   init(channel: FlutterMethodChannel) {
+    let asset = NSDataAsset(name:"silent")
+    waitPlayer = try! AVAudioPlayer(data:asset!.data, fileTypeHint:"mp3")
+    waitPlayer.numberOfLoops = -1
+
     super.init()
     self.channel = channel
     synthesizer.delegate = self
@@ -130,6 +135,19 @@ public class SwiftFlutterTtsPlugin: NSObject, FlutterPlugin, AVSpeechSynthesizer
       let audioOptions = args[iosAudioCategoryOptionsKey] as? Array<String>
       let audioModes = args[iosAudioModeKey] as? String
       self.setAudioCategory(audioCategory: audioCategory, audioOptions: audioOptions, audioMode: audioModes, result: result)
+      break
+    case "startWait":
+      if waitPlayer.isPlaying {
+        waitPlayer.stop()
+      }
+      waitPlayer.play()
+      result(1)
+      break
+    case "endWait":
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        self.waitPlayer.stop()
+      }
+      result(1)
       break
     default:
       result(FlutterMethodNotImplemented)
